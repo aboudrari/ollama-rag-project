@@ -1,0 +1,5 @@
+﻿Students must register for their courses before the beginning of each semester.
+
+Students are required to attend their scheduled examinations.
+
+Students must complete all graduation requirements before receiving their degree.
