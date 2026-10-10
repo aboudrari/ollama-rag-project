@@ -1,9 +1,8 @@
-
 import re
 
 
 def split_text(text, source, chunk_size=100, chunk_overlap=20):
-    """Split text into chunks while preserving source metadata."""
+    """Split text into overlapping chunks while preserving source metadata."""
 
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than 0")
@@ -11,103 +10,48 @@ def split_text(text, source, chunk_size=100, chunk_overlap=20):
     if chunk_overlap < 0 or chunk_overlap >= chunk_size:
         raise ValueError("chunk_overlap must be >= 0 and < chunk_size")
 
-    # Remove BOM and split the document into paragraphs.
-    paragraphs = text.replace("\ufeff", "").split("\n\n")
+    # Remove the BOM and normalize whitespace.
+    text = text.replace("\ufeff", "").strip()
+    text = re.sub(r"\s+", " ", text)
 
-    paragraphs = [
-        paragraph.strip()
-        for paragraph in paragraphs
-        if paragraph.strip()
-    ]
+    if not text:
+        return []
 
-    # Split paragraphs into manageable text segments.
-    segments = []
-
-    for paragraph in paragraphs:
-        if len(paragraph) <= chunk_size:
-            segments.append((paragraph, "\n\n"))
-            continue
-
-        sentences = re.split(r"(?<=[.!?])\s+", paragraph)
-
-        for sentence in sentences:
-            sentence = sentence.strip()
-
-            if not sentence:
-                continue
-
-            if len(sentence) > chunk_size:
-                words = sentence.split()
-                piece = ""
-
-                for word in words:
-                    candidate = f"{piece} {word}".strip()
-
-                    if len(candidate) <= chunk_size:
-                        piece = candidate
-                    else:
-                        if piece:
-                            segments.append((piece, " "))
-                        piece = word
-
-                if piece:
-                    segments.append((piece, " "))
-            else:
-                segments.append((sentence, " "))
-
-    # Combine segments into chunks.
     chunks = []
-    current_chunk = ""
+    start = 0
 
-    for segment, separator in segments:
-        if not current_chunk:
-            current_chunk = segment
-            continue
+    while start < len(text):
+        end = min(start + chunk_size, len(text))
 
-        candidate = current_chunk + separator + segment
+        # Prefer ending at a word boundary when possible.
+        if end < len(text) and text[end] != " ":
+            boundary = text.rfind(" ", start, end)
 
-        if len(candidate) <= chunk_size:
-            current_chunk = candidate
-        else:
+            if boundary > start:
+                end = boundary
+
+        chunk_text = text[start:end].strip()
+
+        if chunk_text:
             chunks.append({
-                "text": current_chunk,
+                "text": chunk_text,
                 "source": source
             })
 
-            # Keep some words from the previous chunk as overlap.
-            overlap = ""
+        if end >= len(text):
+            break
 
-            if chunk_overlap > 0:
-                words = current_chunk.split()
-                suffix = []
+        # Move forward while retaining the requested character overlap.
+        next_start = max(start + 1, end - chunk_overlap)
 
-                for word in reversed(words):
-                    candidate_overlap = " ".join([word] + suffix)
+        # Avoid starting in the middle of a word.
+        if next_start > 0 and text[next_start - 1] != " ":
+            next_space = text.find(" ", next_start)
 
-                    if len(candidate_overlap) > chunk_overlap:
-                        break
+            if next_space != -1 and next_space < end:
+                next_start = next_space + 1
 
-                    suffix.insert(0, word)
-
-                overlap = " ".join(suffix)
-
-            current_chunk = segment
-
-            while (
-                overlap
-                and len(overlap + separator + current_chunk) > chunk_size
-            ):
-                overlap_words = overlap.split()
-                overlap = " ".join(overlap_words[1:])
-
-            if overlap:
-                current_chunk = overlap + separator + current_chunk
-
-    # Save the last chunk.
-    if current_chunk:
-        chunks.append({
-            "text": current_chunk,
-            "source": source
-        })
+        start = next_start
 
     return chunks
+    
