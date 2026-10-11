@@ -31,9 +31,17 @@ def rag(question, chunks, embeddings, top_k=1, threshold=0.6):
     sources = sorted(set(sources))
 
     prompt = f"""
-Answer the question using only the provided context.
-If the answer is not contained in the context, say:
-"I don't know."
+You are a question-answering assistant.
+
+Answer the question using only the information explicitly
+provided in the context.
+
+Important rules:
+- The context may discuss the topic without containing the answer.
+- Do not guess, infer missing facts, or use outside knowledge.
+- If the context does not explicitly answer the question,
+  respond exactly with: I don't know.
+- If the context provides the answer, answer briefly.
 
 Context:
 {context}

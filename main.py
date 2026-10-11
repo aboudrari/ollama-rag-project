@@ -8,36 +8,87 @@ SRC_DIR = PROJECT_ROOT / "src"
 sys.path.insert(0, str(SRC_DIR))
 
 from chunker import split_text
+from document_loader import load_pdf
 from embeddings import embed_texts
 from rag import rag
 
 
+def load_documents(documents_dir):
+    """Load all supported TXT and PDF documents."""
+
+    chunks = []
+
+    document_paths = sorted(
+        path
+        for path in documents_dir.iterdir()
+        if path.is_file()
+        and path.suffix.lower() in {".txt", ".pdf"}
+    )
+
+    for document_path in document_paths:
+        print(f"Loading: {document_path.name}")
+
+        if document_path.suffix.lower() == ".pdf":
+            text = load_pdf(document_path)
+        else:
+            text = document_path.read_text(encoding="utf-8")
+
+        document_chunks = split_text(
+            text,
+            source=document_path.name,
+            chunk_size=500,
+            chunk_overlap=100,
+        )
+
+        chunks.extend(document_chunks)
+
+        print(f"  Chunks created: {len(document_chunks)}")
+
+    return chunks
+
+
 def main():
-    # Load the document.
-    document_path = (
-        PROJECT_ROOT / "data" / "documents" / "student_handbook.txt"
-    )
-    text = document_path.read_text(encoding="utf-8")
+    documents_dir = PROJECT_ROOT / "data" / "documents"
 
-    # Split the document into chunks.
-    chunks = split_text(
-        text,
-        source=document_path.name,
-        chunk_size=100,
-        chunk_overlap=20,
-    )
-
-    if not chunks:
-        print("No text was found in the document.")
+    if not documents_dir.exists():
+        print("Documents directory was not found.")
         return
 
-    # Generate embeddings for all document chunks.
+    # Load and chunk every supported document.
+    chunks = load_documents(documents_dir)
+
+    if not chunks:
+        print("No text was found in the documents.")
+        return
+
+    # Generate embeddings for all chunks.
     texts = [chunk["text"] for chunk in chunks]
     embeddings = embed_texts(texts)
 
-    print("RAG application is ready!")
-    print(f"Loaded document: {document_path.name}")
-    print(f"Number of chunks: {len(chunks)}")
+    # from retriever import retrieve_relevant_chunks
+
+    # question = "What is the university's tuition fee?"
+
+    # matches = retrieve_relevant_chunks(
+    #     question=question,
+    #     chunks=chunks,
+    #     embeddings=embeddings,
+    #     top_k=3,
+    #     threshold=0.6,
+    # )
+
+    # for i, chunk in enumerate(matches, start=1):
+    #     print(f"\nMatch {i}:")
+    #     print("Source:", chunk["source"])
+    #     print("Text:", chunk["text"])
+
+    # return
+
+    sources = sorted({chunk["source"] for chunk in chunks})
+
+    print("\nRAG application is ready!")
+    print(f"Documents loaded: {len(sources)}")
+    print(f"Total chunks: {len(chunks)}")
     print("\nAsk a question, or type 'exit' to quit.")
 
     # Interactive question-answering loop.
