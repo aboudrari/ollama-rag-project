@@ -1,4 +1,3 @@
-
 import sys
 from pathlib import Path
 
@@ -11,6 +10,8 @@ from chunker import split_text
 from document_loader import load_pdf
 from embeddings import embed_texts
 from rag import rag
+from retriever import retrieve_relevant_chunks
+
 
 
 def load_documents(documents_dir):
@@ -47,6 +48,40 @@ def load_documents(documents_dir):
     return chunks
 
 
+def inspect_retrieval(chunks, embeddings):
+    """Inspect retrieval results for evaluation questions."""
+
+    questions = [
+        "How many weeks does an education year consist of?",
+        "How many working days must an education year contain at minimum?",
+        "What is the language of instruction at the university?",
+        "How many half-semesters are included in an education year?",
+    ]
+
+    for question in questions:
+        print("\n" + "=" * 70)
+        print(f"Question: {question}")
+        print("=" * 70)
+
+        matches = retrieve_relevant_chunks(
+            question=question,
+            chunks=chunks,
+            embeddings=embeddings,
+            top_k=3,
+            threshold=0.6,
+        )
+
+        if not matches:
+            print("No chunks retrieved.")
+            continue
+
+        for rank, chunk in enumerate(matches, start=1):
+            print(f"\nResult {rank}")
+            print("Chunk ID:", chunk["chunk_id"])
+            print("Source:", chunk["source"])
+            print("Text:", chunk["text"])
+
+
 def main():
     documents_dir = PROJECT_ROOT / "data" / "documents"
 
@@ -65,30 +100,15 @@ def main():
     texts = [chunk["text"] for chunk in chunks]
     embeddings = embed_texts(texts)
 
-    # from retriever import retrieve_relevant_chunks
-
-    # question = "What is the university's tuition fee?"
-
-    # matches = retrieve_relevant_chunks(
-    #     question=question,
-    #     chunks=chunks,
-    #     embeddings=embeddings,
-    #     top_k=3,
-    #     threshold=0.6,
-    # )
-
-    # for i, chunk in enumerate(matches, start=1):
-    #     print(f"\nMatch {i}:")
-    #     print("Source:", chunk["source"])
-    #     print("Text:", chunk["text"])
-
-    # return
-
     sources = sorted({chunk["source"] for chunk in chunks})
 
     print("\nRAG application is ready!")
     print(f"Documents loaded: {len(sources)}")
     print(f"Total chunks: {len(chunks)}")
+
+    # Temporarily inspect retrieval results for evaluation preparation.
+    inspect_retrieval(chunks, embeddings)
+
     print("\nAsk a question, or type 'exit' to quit.")
 
     # Interactive question-answering loop.

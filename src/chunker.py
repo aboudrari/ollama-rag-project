@@ -2,7 +2,7 @@ import re
 
 
 def split_text(text, source, chunk_size=100, chunk_overlap=20):
-    """Split text into overlapping chunks while preserving source metadata."""
+    """Split text into overlapping chunks with source metadata and unique IDs."""
 
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than 0")
@@ -33,9 +33,12 @@ def split_text(text, source, chunk_size=100, chunk_overlap=20):
         chunk_text = text[start:end].strip()
 
         if chunk_text:
+            chunk_id = f"{source}::chunk_{len(chunks)}"
+
             chunks.append({
+                "chunk_id": chunk_id,
                 "text": chunk_text,
-                "source": source
+                "source": source,
             })
 
         if end >= len(text):
@@ -54,4 +57,3 @@ def split_text(text, source, chunk_size=100, chunk_overlap=20):
         start = next_start
 
     return chunks
-    
