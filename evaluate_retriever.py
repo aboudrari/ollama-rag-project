@@ -1,4 +1,3 @@
-
 import sys
 from pathlib import Path
 
@@ -17,8 +16,11 @@ from evaluation import (
 )
 
 
-def evaluate_retriever(top_k=3, threshold=0.6):
-    """Evaluate retrieval quality using labeled questions and chunks."""
+def evaluate_top_k(
+    top_k_values=(2, 3, 5),
+    threshold=0.6,
+):
+    """Compare retrieval quality across different top_k values."""
 
     documents_dir = PROJECT_ROOT / "data" / "documents"
 
@@ -27,69 +29,77 @@ def evaluate_retriever(top_k=3, threshold=0.6):
             f"Documents directory not found: {documents_dir}"
         )
 
-    # Load and chunk documents.
+    # Load and chunk documents once.
     chunks = load_documents(documents_dir)
 
     if not chunks:
         raise ValueError("No document chunks were loaded.")
 
-    # Generate embeddings once and reuse them for all questions.
+    # Generate document embeddings once.
     texts = [chunk["text"] for chunk in chunks]
     embeddings = embed_texts(texts)
 
-    precision_scores = []
-    recall_scores = []
-
     print("\n" + "=" * 60)
-    print("RETRIEVER EVALUATION")
+    print("TOP-K EVALUATION")
+    print(f"Threshold: {threshold}")
+    print(f"Number of chunks: {len(chunks)}")
     print("=" * 60)
 
-    for case in EVALUATION_DATASET:
-        question = case["question"]
-        relevant_ids = set(case["relevant_chunk_ids"])
+    # Compare each top_k value using the same documents and embeddings.
+    for top_k in top_k_values:
+        if top_k <= 0:
+            raise ValueError("Every top_k value must be greater than 0.")
 
-        matches = retrieve_relevant_chunks(
-            question=question,
-            chunks=chunks,
-            embeddings=embeddings,
-            top_k=top_k,
-            threshold=threshold,
-        )
+        precision_scores = []
+        recall_scores = []
 
-        retrieved_ids = [
-            chunk["chunk_id"] for chunk in matches
-        ]
+        print(f"\n\n{'-' * 60}")
+        print(f"RESULTS FOR top_k = {top_k}")
+        print("-" * 60)
 
-        precision = precision_at_k(
-            retrieved_items=retrieved_ids,
-            relevant_items=relevant_ids,
-            k=top_k,
-        )
+        for case in EVALUATION_DATASET:
+            question = case["question"]
+            relevant_ids = set(case["relevant_chunk_ids"])
 
-        recall = recall_at_k(
-            retrieved_items=retrieved_ids,
-            relevant_items=relevant_ids,
-            k=top_k,
-        )
+            matches = retrieve_relevant_chunks(
+                question=question,
+                chunks=chunks,
+                embeddings=embeddings,
+                top_k=top_k,
+                threshold=threshold,
+            )
 
-        precision_scores.append(precision)
-        recall_scores.append(recall)
+            retrieved_ids = [
+                chunk["chunk_id"] for chunk in matches
+            ]
 
-        print(f"\nQuestion: {question}")
-        print(f"Retrieved IDs: {retrieved_ids}")
-        print(f"Relevant IDs:  {sorted(relevant_ids)}")
-        print(f"Precision@{top_k}: {precision:.3f}")
-        print(f"Recall@{top_k}:    {recall:.3f}")
+            precision = precision_at_k(
+                retrieved_items=retrieved_ids,
+                relevant_items=relevant_ids,
+                k=top_k,
+            )
 
-    mean_precision = sum(precision_scores) / len(precision_scores)
-    mean_recall = sum(recall_scores) / len(recall_scores)
+            recall = recall_at_k(
+                retrieved_items=retrieved_ids,
+                relevant_items=relevant_ids,
+                k=top_k,
+            )
 
-    print("\n" + "=" * 60)
-    print("OVERALL RESULTS")
-    print("=" * 60)
-    print(f"Mean Precision@{top_k}: {mean_precision:.3f}")
-    print(f"Mean Recall@{top_k}:    {mean_recall:.3f}")
+            precision_scores.append(precision)
+            recall_scores.append(recall)
+
+            print(f"\nQuestion: {question}")
+            print(f"Retrieved IDs: {retrieved_ids}")
+            print(f"Relevant IDs:  {sorted(relevant_ids)}")
+            print(f"Precision@{top_k}: {precision:.3f}")
+            print(f"Recall@{top_k}:    {recall:.3f}")
+
+        mean_precision = sum(precision_scores) / len(precision_scores)
+        mean_recall = sum(recall_scores) / len(recall_scores)
+
+        print(f"\nMean Precision@{top_k}: {mean_precision:.3f}")
+        print(f"Mean Recall@{top_k}:    {mean_recall:.3f}")
 
 
 if __name__ == "__main__":
-    evaluate_retriever()
+    evaluate_top_k()

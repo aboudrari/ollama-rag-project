@@ -1,9 +1,10 @@
+
 import ollama
 
 from retriever import retrieve_relevant_chunks
 
 
-def rag(question, chunks, embeddings, top_k=1, threshold=0.6):
+def rag(question, chunks, embeddings, top_k=3, threshold=0.6):
     """Answer a question using retrieved document context."""
 
     retrieved_chunks = retrieve_relevant_chunks(
@@ -31,17 +32,21 @@ def rag(question, chunks, embeddings, top_k=1, threshold=0.6):
     sources = sorted(set(sources))
 
     prompt = f"""
-You are a question-answering assistant.
+You are a precise question-answering assistant.
 
-Answer the question using only the information explicitly
-provided in the context.
+Answer the question using only information explicitly provided
+in the context.
 
-Important rules:
-- The context may discuss the topic without containing the answer.
+Rules:
+- Read the entire context carefully before answering.
+- Identify the exact fact requested by the question.
+- Pay attention to distinctions such as passing versus failing,
+  minimum versus maximum, and included versus excluded values.
+- Do not confuse a value mentioned near the answer with the answer itself.
 - Do not guess, infer missing facts, or use outside knowledge.
-- If the context does not explicitly answer the question,
-  respond exactly with: I don't know.
-- If the context provides the answer, answer briefly.
+- If the context does not explicitly contain enough information
+  to answer the question, respond exactly with: I don't know.
+- Keep the answer brief and directly answer the question.
 
 Context:
 {context}
@@ -60,6 +65,7 @@ Answer:
                 "content": prompt,
             }
         ],
+        options={"temperature": 0},
     )
 
     answer = response["message"]["content"].strip()

@@ -1,35 +1,68 @@
 
 EVALUATION_DATASET = [
     {
-        "question": "How many weeks does an education year consist of?",
+        "question": (
+            "What is the minimum attendance requirement for students?"
+        ),
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_1",
+            "ciu_exam_regulations.pdf::chunk_33",
         ],
     },
     {
         "question": (
-            "How many working days must an education year "
-            "contain at minimum?"
+            "What happens when a student's absenteeism reaches 30%?"
         ),
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_1",
-        ],
-    },
-    {
-        "question": "What is the language of instruction at the university?",
-        "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_2",
-            "ciu_exam_regulations.pdf::chunk_3",
+            "ciu_exam_regulations.pdf::chunk_34",
         ],
     },
     {
         "question": (
-            "How many half-semesters are included in an education year?"
+            "How many midterm exams are held at minimum each semester?"
         ),
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_1",
+            "ciu_exam_regulations.pdf::chunk_19",
         ],
     },
+    {
+        "question": "What is the minimum duration of a midterm exam?",
+        "relevant_chunk_ids": [
+            "ciu_exam_regulations.pdf::chunk_27",
+        ],
+    },
+    {
+        "question": (
+            "How late can a student arrive for a midterm exam "
+            "and still be admitted?"
+        ),
+        "relevant_chunk_ids": [
+            "ciu_exam_regulations.pdf::chunk_28",
+        ],
+    },
+    {
+        "question": "What is the minimum CGPA required for graduation?",
+        "relevant_chunk_ids": [
+            "ciu_exam_regulations.pdf::chunk_91",
+        ],
+    },
+    {
+        "question": (
+            "How many days does a student have to object to an announced grade?"
+        ),
+        "relevant_chunk_ids": [
+            "ciu_exam_regulations.pdf::chunk_49",
+        ],
+    },
+    {
+    "question": (
+        "Which letter grade is the lowest passing grade "
+        "on the regular letter-grade scale?"
+    ),
+    "relevant_chunk_ids": [
+        "ciu_exam_regulations.pdf::chunk_37",
+        "ciu_exam_regulations.pdf::chunk_38",
+    ],
+},
 ]
 
 
