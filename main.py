@@ -107,7 +107,7 @@ def main():
     print(f"Total chunks: {len(chunks)}")
 
     # Temporarily inspect retrieval results for evaluation preparation.
-    inspect_retrieval(chunks, embeddings)
+    #inspect_retrieval(chunks, embeddings)
 
     print("\nAsk a question, or type 'exit' to quit.")
 

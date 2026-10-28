@@ -47,7 +47,7 @@ def rag_data():
         ),
         (
             "How many half-semesters are included in an education year?",
-            "two",
+            "2",
         ),
     ],
 )
