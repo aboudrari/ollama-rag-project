@@ -5,7 +5,7 @@ EVALUATION_DATASET = [
             "What is the minimum attendance requirement for students?"
         ),
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_33",
+            "ciu_exam_regulations.pdf::chunk_61",
         ],
     },
     {
@@ -13,7 +13,8 @@ EVALUATION_DATASET = [
             "What happens when a student's absenteeism reaches 30%?"
         ),
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_34",
+            "ciu_exam_regulations.pdf::chunk_61",
+            "ciu_exam_regulations.pdf::chunk_62",
         ],
     },
     {
@@ -21,13 +22,13 @@ EVALUATION_DATASET = [
             "How many midterm exams are held at minimum each semester?"
         ),
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_19",
+            "ciu_exam_regulations.pdf::chunk_44",
         ],
     },
     {
         "question": "What is the minimum duration of a midterm exam?",
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_27",
+            "ciu_exam_regulations.pdf::chunk_54",
         ],
     },
     {
@@ -36,13 +37,13 @@ EVALUATION_DATASET = [
             "and still be admitted?"
         ),
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_28",
+            "ciu_exam_regulations.pdf::chunk_54",
         ],
     },
     {
         "question": "What is the minimum CGPA required for graduation?",
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_91",
+            "ciu_exam_regulations.pdf::chunk_169",
         ],
     },
     {
@@ -50,20 +51,20 @@ EVALUATION_DATASET = [
             "How many days does a student have to object to an announced grade?"
         ),
         "relevant_chunk_ids": [
-            "ciu_exam_regulations.pdf::chunk_49",
+            "ciu_exam_regulations.pdf::chunk_81",
         ],
     },
     {
-    "question": (
-        "Which letter grade is the lowest passing grade "
-        "on the regular letter-grade scale?"
-    ),
-    "relevant_chunk_ids": [
-        "ciu_exam_regulations.pdf::chunk_37",
-        "ciu_exam_regulations.pdf::chunk_38",
-    ],
-},
+        "question": (
+            "Which letter grade is the lowest passing grade "
+            "on the regular letter-grade scale?"
+        ),
+        "relevant_chunk_ids": [
+            "ciu_exam_regulations.pdf::chunk_66",
+        ],
+    },
 ]
+
 
 
 def precision_at_k(retrieved_items, relevant_items, k):

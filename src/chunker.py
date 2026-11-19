@@ -1,16 +1,24 @@
+
 import re
 
 
-def split_text(text, source, chunk_size=100, chunk_overlap=20):
+def split_text(
+    text,
+    source,
+    chunk_size=1000,
+    chunk_overlap=200,
+):
     """Split text into overlapping chunks with source metadata and unique IDs."""
 
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than 0")
 
     if chunk_overlap < 0 or chunk_overlap >= chunk_size:
-        raise ValueError("chunk_overlap must be >= 0 and < chunk_size")
+        raise ValueError(
+            "chunk_overlap must be >= 0 and < chunk_size"
+        )
 
-    # Remove the BOM and normalize whitespace.
+    # Remove BOM and normalize whitespace.
     text = text.replace("\ufeff", "").strip()
     text = re.sub(r"\s+", " ", text)
 
@@ -23,12 +31,20 @@ def split_text(text, source, chunk_size=100, chunk_overlap=20):
     while start < len(text):
         end = min(start + chunk_size, len(text))
 
-        # Prefer ending at a word boundary when possible.
-        if end < len(text) and text[end] != " ":
-            boundary = text.rfind(" ", start, end)
+        if end < len(text):
+            # Prefer sentence boundaries.
+            boundary = max(
+                text.rfind(". ", start, end),
+                text.rfind("? ", start, end),
+                text.rfind("! ", start, end),
+            )
+
+            # Fall back to a word boundary.
+            if boundary <= start:
+                boundary = text.rfind(" ", start, end)
 
             if boundary > start:
-                end = boundary
+                end = boundary + 1
 
         chunk_text = text[start:end].strip()
 
@@ -44,15 +60,16 @@ def split_text(text, source, chunk_size=100, chunk_overlap=20):
         if end >= len(text):
             break
 
-        # Move forward while retaining the requested character overlap.
-        next_start = max(start + 1, end - chunk_overlap)
+        next_start = max(
+            start + 1,
+            end - chunk_overlap,
+        )
 
         # Avoid starting in the middle of a word.
-        if next_start > 0 and text[next_start - 1] != " ":
-            next_space = text.find(" ", next_start)
+        next_space = text.find(" ", next_start, end)
 
-            if next_space != -1 and next_space < end:
-                next_start = next_space + 1
+        if next_space != -1:
+            next_start = next_space + 1
 
         start = next_start
 

@@ -1,3 +1,4 @@
+
 import sys
 from pathlib import Path
 
@@ -9,42 +10,31 @@ sys.path.insert(0, str(SRC_DIR))
 from main import load_documents
 from embeddings import embed_texts
 from retriever import cosine_similarity
+from evaluation import EVALUATION_DATASET
 import ollama
 
 
-DEBUG_QUESTIONS = [
-    {
-        "question": (
-            "How many midterm exams are held at minimum "
-            "each semester?"
-        ),
-        "expected_chunk_id": "ciu_exam_regulations.pdf::chunk_19",
-    },
-    {
-        "question": (
-            "What is the minimum passing letter grade "
-            "listed in the regulations?"
-        ),
-        "expected_chunk_id": "ciu_exam_regulations.pdf::chunk_38",
-    },
-]
-
-
 def debug_retriever(top_n=5):
+    """Display the most relevant chunks for every evaluation question."""
+
     documents_dir = PROJECT_ROOT / "data" / "documents"
 
     chunks = load_documents(documents_dir)
+
+    if not chunks:
+        raise ValueError("No document chunks were loaded.")
+
     texts = [chunk["text"] for chunk in chunks]
     embeddings = embed_texts(texts)
 
-    for case in DEBUG_QUESTIONS:
+    for index, case in enumerate(EVALUATION_DATASET, start=1):
         question = case["question"]
-        expected_id = case["expected_chunk_id"]
 
         response = ollama.embed(
             model="nomic-embed-text",
             input=question,
         )
+
         question_embedding = response.embeddings[0]
 
         scored_chunks = []
@@ -62,36 +52,20 @@ def debug_retriever(top_n=5):
             reverse=True,
         )
 
-        print("\n" + "=" * 70)
-        print(f"Question: {question}")
-        print(f"Expected chunk: {expected_id}")
-        print("=" * 70)
-
-        expected_rank = None
+        print("\n" + "=" * 80)
+        print(f"QUESTION {index}: {question}")
+        print("=" * 80)
 
         for rank, (similarity, chunk) in enumerate(
-            scored_chunks,
+            scored_chunks[:top_n],
             start=1,
         ):
-            if chunk["chunk_id"] == expected_id:
-                expected_rank = rank
-
-            if rank <= top_n:
-                print(f"\nRank: {rank}")
-                print(f"Similarity: {similarity:.4f}")
-                print(f"Chunk ID: {chunk['chunk_id']}")
-                print(f"Text: {chunk['text'][:350]}")
-
-        if expected_rank is not None:
-            expected_similarity = scored_chunks[
-                expected_rank - 1
-            ][0]
-
-            print(f"\nExpected chunk rank: {expected_rank}")
-            print(
-                "Expected chunk similarity: "
-                f"{expected_similarity:.4f}"
-            )
+            print(f"\nRank: {rank}")
+            print(f"Similarity: {similarity:.4f}")
+            print(f"Chunk ID: {chunk['chunk_id']}")
+            print(f"Source: {chunk['source']}")
+            print(f"Text: {chunk['text'][:700]}")
+            print("-" * 80)
 
 
 if __name__ == "__main__":
