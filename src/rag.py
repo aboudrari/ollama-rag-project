@@ -4,7 +4,7 @@ import ollama
 from retriever import retrieve_relevant_chunks
 
 
-def rag(question, chunks, embeddings, top_k=3, threshold=0.6):
+def rag(question, chunks, embeddings, top_k=2, threshold=0.6):
     """Answer a question using retrieved document context."""
 
     retrieved_chunks = retrieve_relevant_chunks(
@@ -21,32 +21,33 @@ def rag(question, chunks, embeddings, top_k=3, threshold=0.6):
             "sources": [],
         }
 
-    context_parts = []
-    sources = []
-
-    for chunk in retrieved_chunks:
-        context_parts.append(chunk["text"])
-        sources.append(chunk["source"])
-
-    context = "\n\n".join(context_parts)
-    sources = sorted(set(sources))
+    context = "\n\n".join(
+        chunk["text"]
+        for chunk in retrieved_chunks
+    )
 
     prompt = f"""
-You are a precise question-answering assistant.
+You are a precise document question-answering assistant.
 
-Answer the question using only information explicitly provided
-in the context.
+Your task is to answer the user's question using ONLY
+the information provided in the context.
 
 Rules:
-- Read the entire context carefully before answering.
-- Identify the exact fact requested by the question.
-- Pay attention to distinctions such as passing versus failing,
-  minimum versus maximum, and included versus excluded values.
-- Do not confuse a value mentioned near the answer with the answer itself.
-- Do not guess, infer missing facts, or use outside knowledge.
-- If the context does not explicitly contain enough information
-  to answer the question, respond exactly with: I don't know.
-- Keep the answer brief and directly answer the question.
+- Read all the provided context before answering.
+- Identify the exact information requested.
+- Pay close attention to numbers, conditions, and exceptions.
+- For classification questions, look for explicit statements
+  that define which categories qualify or do not qualify.
+- Treat explicit classification statements as authoritative.
+- Do not determine whether a category qualifies from its numerical
+  value, coefficient, or position in a table.
+- When a table is followed by an explanatory statement, read
+  that statement carefully before answering.
+- Do not use external knowledge.
+- Do not guess or invent information.
+- If the answer is not explicitly supported by the context,
+  respond exactly: I don't know.
+- Keep the answer brief and direct.
 
 Context:
 {context}
@@ -65,10 +66,26 @@ Answer:
                 "content": prompt,
             }
         ],
-        options={"temperature": 0},
+        options={
+            "temperature": 0,
+        },
     )
 
     answer = response["message"]["content"].strip()
+
+    normalized_answer = " ".join(answer.lower().split())
+    normalized_answer = normalized_answer.strip(" .!?\"'")
+
+    if normalized_answer.startswith("i don't know"):
+        return {
+            "answer": "I don't know.",
+            "sources": [],
+        }
+
+    sources = sorted({
+        chunk["source"]
+        for chunk in retrieved_chunks
+    })
 
     return {
         "answer": answer,

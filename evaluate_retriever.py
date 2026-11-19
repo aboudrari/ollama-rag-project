@@ -101,5 +101,64 @@ def evaluate_top_k(
         print(f"Mean Recall@{top_k}:    {mean_recall:.3f}")
 
 
+def evaluate_threshold(
+    threshold_values=(0.3, 0.5, 0.6, 0.7, 0.8),
+    top_k=3,
+):
+    """Compare retrieval quality across different thresholds."""
+
+    documents_dir = PROJECT_ROOT / "data" / "documents"
+
+    chunks = load_documents(documents_dir)
+
+    if not chunks:
+        raise ValueError("No document chunks were loaded.")
+
+    texts = [chunk["text"] for chunk in chunks]
+    embeddings = embed_texts(texts)
+
+    print("\n" + "=" * 60)
+    print("THRESHOLD EVALUATION")
+    print(f"Top-K: {top_k}")
+    print("=" * 60)
+
+    for threshold in threshold_values:
+        precision_scores = []
+        recall_scores = []
+
+        for case in EVALUATION_DATASET:
+            matches = retrieve_relevant_chunks(
+                question=case["question"],
+                chunks=chunks,
+                embeddings=embeddings,
+                top_k=top_k,
+                threshold=threshold,
+            )
+
+            retrieved_ids = [
+                chunk["chunk_id"] for chunk in matches
+            ]
+
+            relevant_ids = set(case["relevant_chunk_ids"])
+
+            precision_scores.append(
+                precision_at_k(retrieved_ids, relevant_ids, top_k)
+            )
+
+            recall_scores.append(
+                recall_at_k(retrieved_ids, relevant_ids, top_k)
+            )
+
+        mean_precision = sum(precision_scores) / len(precision_scores)
+        mean_recall = sum(recall_scores) / len(recall_scores)
+
+        print(
+            f"Threshold: {threshold:.2f} | "
+            f"Precision@{top_k}: {mean_precision:.3f} | "
+            f"Recall@{top_k}: {mean_recall:.3f}"
+        )
+
+
 if __name__ == "__main__":
     evaluate_top_k()
+    evaluate_threshold()

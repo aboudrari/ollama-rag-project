@@ -2,9 +2,9 @@
 import sys
 from pathlib import Path
 
-# Make the src directory available for imports.
 PROJECT_ROOT = Path(__file__).resolve().parent
 SRC_DIR = PROJECT_ROOT / "src"
+
 sys.path.insert(0, str(SRC_DIR))
 
 from main import load_documents
@@ -13,59 +13,78 @@ from rag import rag
 from evaluation import EVALUATION_DATASET
 
 
-def evaluate_rag(top_k_values=(2, 3, 5), threshold=0.6):
-    """Compare generated RAG answers across different top_k values."""
+OUT_OF_DOCUMENT_QUESTIONS = [
+    "Who is the president of the United States?",
+    "What is the university's founding year?",
+    "What is the tuition fee for international students?",
+]
 
+
+def evaluate_rag(top_k_values=(2, 3, 5), threshold=0.6):
     documents_dir = PROJECT_ROOT / "data" / "documents"
 
-    if not documents_dir.exists():
-        raise FileNotFoundError(
-            f"Documents directory not found: {documents_dir}"
-        )
-
-    # Load and chunk documents once.
+    print("\nLoading documents...")
     chunks = load_documents(documents_dir)
 
-    if not chunks:
-        raise ValueError("No document chunks were loaded.")
+    print(f"Loaded {len(chunks)} chunks.")
 
-    # Generate document embeddings once and reuse them.
+    print("\nGenerating embeddings...")
     texts = [chunk["text"] for chunk in chunks]
     embeddings = embed_texts(texts)
 
-    print("\n" + "=" * 70)
-    print("END-TO-END RAG EVALUATION")
-    print(f"Threshold: {threshold}")
-    print(f"Documents chunks: {len(chunks)}")
-    print("=" * 70)
+    total_passed = 0
+    total_failed = 0
 
     for top_k in top_k_values:
-        if top_k <= 0:
-            raise ValueError("Every top_k value must be greater than 0.")
+        print("\n" + "=" * 60)
+        print(f"RAG EVALUATION - top_k={top_k}")
+        print("=" * 60)
 
-        print(f"\n\n{'#' * 70}")
-        print(f"TESTING top_k = {top_k}")
-        print("#" * 70)
-
-        for index, case in enumerate(EVALUATION_DATASET, start=1):
-            question = case["question"]
-
-            print(f"\n{'-' * 70}")
-            print(f"Question {index}: {question}")
-            print("-" * 70)
-
+        for case in EVALUATION_DATASET:
             result = rag(
-                question=question,
+                question=case["question"],
                 chunks=chunks,
                 embeddings=embeddings,
                 top_k=top_k,
                 threshold=threshold,
             )
 
-            print("Expected relevant chunk IDs:",
-                  case["relevant_chunk_ids"])
-            print("Generated answer:", result["answer"])
-            print("Sources:", result["sources"])
+            answer = result["answer"]
+
+            print(f"\nQuestion: {case['question']}")
+            print(f"Answer: {answer}")
+            print(f"Sources: {result['sources']}")
+
+    print("\n" + "=" * 60)
+    print("OUT-OF-DOCUMENT QUESTIONS")
+    print("=" * 60)
+
+    for question in OUT_OF_DOCUMENT_QUESTIONS:
+        result = rag(
+            question=question,
+            chunks=chunks,
+            embeddings=embeddings,
+            top_k=2,
+            threshold=threshold,
+        )
+
+        passed = result["answer"].strip().lower().rstrip(".!? ") == "i don't know"
+
+        if passed:
+            total_passed += 1
+        else:
+            total_failed += 1
+
+        print(f"\nQuestion: {question}")
+        print(f"Answer: {result['answer']}")
+        print(f"Sources: {result['sources']}")
+        print("Status:", "PASS" if passed else "FAIL")
+
+    print("\n" + "=" * 60)
+    print("FINAL SUMMARY")
+    print("=" * 60)
+    print(f"Out-of-document tests passed: {total_passed}/3")
+    print(f"Out-of-document tests failed: {total_failed}/3")
 
 
 if __name__ == "__main__":

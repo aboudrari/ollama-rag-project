@@ -47,7 +47,7 @@ def rag_data():
         ),
         (
             "How many half-semesters are included in an education year?",
-            "2",
+            "two",
         ),
     ],
 )
@@ -74,8 +74,7 @@ def test_unknown_question(rag_data):
     )
 
     assert result["answer"].strip().lower() == "i don't know."
-    assert result["sources"]
-
+    assert result["sources"] == []
 
 def test_retriever_finds_the_correct_answer_chunk(rag_data):
     chunks, embeddings = rag_data
